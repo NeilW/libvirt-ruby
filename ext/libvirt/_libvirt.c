@@ -1649,6 +1649,28 @@ VALUE libvirt_pool_vol_create_xml(int argc, VALUE *argv, VALUE p) {
 }
 
 /*
+ * Call +virStorageVolCreateXMLFrom+[http://www.libvirt.org/html/libvirt-libvirt.html#virStorageVolCreateXMLFrom]
+ */
+VALUE libvirt_pool_vol_create_xml_from(int argc, VALUE *argv, VALUE p) {
+    virStorageVolPtr vol;
+    virConnectPtr c = conn(p);
+    char *xmlDesc;
+    VALUE xml, clonevol, flags;
+
+    rb_scan_args(argc, argv, "21", &xml, &clonevol, &flags);
+
+    if (NIL_P(flags))
+        flags = INT2FIX(0);
+
+    xmlDesc = StringValueCStr(xml);
+
+    vol = virStorageVolCreateXMLFrom(pool_get(p), xmlDesc, vol_get(clonevol), NUM2UINT(flags));
+    _E(vol == NULL, create_error(e_Error, "virNetworkCreateXMLFrom", "", c));
+
+    return vol_new(vol, conn_attr(p));
+}
+
+/*
  * Call +virStorageVolDelete+[http://www.libvirt.org/html/libvirt-libvirt.html#virStorageVolDelete]
  */
 VALUE libvirt_vol_delete(int argc, VALUE *argv, VALUE v) {
@@ -1771,6 +1793,7 @@ static void init_storage(void) {
                      libvirt_pool_lookup_vol_by_path, 1);
     rb_define_method(c_storage_pool, "free", libvirt_pool_free, 0);
     rb_define_method(c_storage_pool, "create_vol_xml", libvirt_pool_vol_create_xml, -1);
+    rb_define_method(c_storage_pool, "create_vol_xml_from", libvirt_pool_vol_create_xml_from, -1);
 #endif
 
 #if HAVE_TYPE_VIRSTORAGEVOLPTR
